@@ -1,0 +1,40 @@
+name: bump_vgv_ai
+
+# Opens a PR moving Formula/vgv_ai.rb to the latest vgv_ai_cli release.
+# vgv_ai_cli's release_binaries workflow dispatches this once the binaries are
+# attached, and the daily run catches a missed dispatch.
+
+on:
+  schedule:
+    # daily at 6 am utc
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Until the formula is added by hand, there is nothing to bump.
+      - name: 🍺 Bump vgv_ai
+        id: bump
+        if: hashFiles('Formula/vgv_ai.rb') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(tool/bump_vgv_ai.sh)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: 🤖 Create Pull Request
+        if: steps.bump.outcome == 'success'
+        uses: peter-evans/create-pull-request@v8.1.1
+        with:
+          base: main
+          labels: bot
+          branch: feat/bump-vgv-ai
+          title: "feat: bump vgv_ai to ${{ steps.bump.outputs.tag }}"
+          body: Please squash and merge me!
+          commit-message: "feat: bump vgv_ai to ${{ steps.bump.outputs.tag }}"
+          token: ${{ secrets.VGV_BOT_PAT }}
+          sign-commits: true

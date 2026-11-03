@@ -37,17 +37,17 @@ brew "<formula>"
 
 Formulae live here and are edited by hand through PRs. Only the release tag
 in each `url` and the `sha256` after it change with a release, and a workflow
-makes that change:
+opens a PR for it:
 
-- [`update_vgv_ai`](.github/workflows/update_vgv_ai.yaml) runs
-  [`tool/bump_vgv_ai.sh`](tool/bump_vgv_ai.sh) against a `vgv_ai_cli`
-  release, tests the result on every platform, and only then pushes it to
-  `main`. `vgv_ai_cli`'s release workflow dispatches it with the new tag, and
-  it also runs daily against the latest release in case a dispatch was missed.
-  Run it by hand from the Actions tab to retry a release.
+- [`bump_vgv_ai`](.github/workflows/bump_vgv_ai.yaml) runs
+  [`tool/bump_vgv_ai.sh`](tool/bump_vgv_ai.sh), which moves
+  `Formula/vgv_ai.rb` to the latest `vgv_ai_cli` release, and opens or
+  updates the `feat/bump-vgv-ai` PR. `vgv_ai_cli`'s release workflow
+  dispatches it once the binaries are attached, and it also runs daily in case
+  a dispatch was missed.
 
-`main` has to accept pushes from `github-actions[bot]`, since the update
-workflows push to it directly.
+The tests run on the bump PR like any other, so squash and merge it once
+they pass.
 
 ## Documentation
 
