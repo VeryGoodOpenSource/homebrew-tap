@@ -9,22 +9,23 @@ tools.
 brew install verygoodopensource/tap/<formula>
 ```
 
-Homebrew only loads formulae from taps you trust, but naming the formula in
-full, as above, trusts it for that `install` or `upgrade`. To install by short
-name, or to have a plain `brew upgrade` pick up new versions, tap and trust
-once:
+Homebrew only loads formulae from taps it [trusts](https://docs.brew.sh/Tap-Trust).
+Installing a formula by its full name, as above, trusts that formula, so a
+plain `brew upgrade` keeps it up to date afterwards. To install by short name,
+trust the formula first:
 
 ```sh
 brew tap verygoodopensource/tap
-brew trust verygoodopensource/tap
+brew trust --formula verygoodopensource/tap/<formula>
 brew install <formula>
 ```
 
-In a `Brewfile`:
+In a `Brewfile`, use the full name and `trusted: true`. Without it,
+`brew bundle` refuses to install the formula, even by its full name:
 
 ```ruby
 tap "verygoodopensource/tap"
-brew "<formula>"
+brew "verygoodopensource/tap/<formula>", trusted: true
 ```
 
 ## Formulae
