@@ -1,11 +1,10 @@
 name: tests
 
 # Audits, installs and tests every formula on the platforms its binaries are
-# built for. Runs on pushes to main too, since vgv_ai_cli's release_binaries
-# workflow pushes formula updates there directly rather than opening a PR.
+# built for. update_vgv_ai calls it with the bumped formula before pushing it.
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
@@ -14,6 +13,12 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      formula-artifact:
+        description: "An artifact holding formulae to test in place of the committed ones."
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -41,6 +46,13 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: ⬇️ Download Formula
+        if: inputs.formula-artifact != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ inputs.formula-artifact }}
+          path: Formula
+
       - name: 🔎 Audit, Install and Test
         run: |
           shopt -s nullglob
@@ -49,7 +61,6 @@ jobs:
             echo "No formulae yet."
             exit 0
           fi
-          brew trust verygoodopensource/tap
           brew style "${formulae[@]}"
           for file in "${formulae[@]}"; do
             formula="verygoodopensource/tap/$(basename "$file" .rb)"

@@ -1,0 +1,119 @@
+name: update_vgv_ai
+
+# Moves Formula/vgv_ai.rb to a vgv_ai_cli release, tests it on every platform,
+# and only then pushes it to main.
+#
+# vgv_ai_cli's release_binaries workflow dispatches this with the release's
+# tag once the binaries are attached. The daily run moves the formula to the
+# latest release in case a dispatch was missed.
+#
+# The formula is tested here rather than by tests.yaml on push, because a push
+# made with GITHUB_TOKEN does not start other workflows.
+
+concurrency:
+  group: update_vgv_ai
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The vgv_ai_cli release tag, such as v0.2.0. Defaults to the latest release."
+        required: false
+  schedule:
+    - cron: "0 6 * * *"
+
+permissions:
+  contents: read
+
+env:
+  CLI_REPOSITORY: VeryGoodOpenSource/vgv_ai_cli
+  FORMULA: Formula/vgv_ai.rb
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.bump.outputs.changed }}
+      tag: ${{ steps.release.outputs.tag }}
+
+    steps:
+      - name: 📚 Git Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 🔎 Resolve Release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          # vgv_ai_plugins releases alongside the CLI under its own tags, so
+          # only vX.Y.Z tags are the CLI's.
+          tag="${INPUT_TAG:-$(gh release list --repo "$CLI_REPOSITORY" \
+            --exclude-drafts --exclude-pre-releases --limit 20 \
+            --json tagName \
+            --jq '[.[].tagName | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))][0]')}"
+          [ -n "$tag" ] || { echo "::error::No vgv_ai_cli release found."; exit 1; }
+          echo "tag=v${tag#v}" >>"$GITHUB_OUTPUT"
+
+      - name: 🍺 Bump Formula
+        id: bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if [ ! -f "$FORMULA" ]; then
+            echo "::notice::$FORMULA does not exist yet, so there is nothing to bump."
+            echo "changed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          gh release download "$TAG" --repo "$CLI_REPOSITORY" \
+            --pattern 'vgv_ai-*.tar.gz.sha256' --dir checksums
+          bash tool/bump_vgv_ai.sh "$TAG" checksums
+          if git diff --quiet -- "$FORMULA"; then
+            echo "$FORMULA is already at $TAG."
+            echo "changed=false" >>"$GITHUB_OUTPUT"
+          else
+            git diff -- "$FORMULA"
+            echo "changed=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: ⬆️ Upload Formula
+        if: steps.bump.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vgv_ai-formula
+          path: ${{ env.FORMULA }}
+          if-no-files-found: error
+
+  test:
+    needs: bump
+    if: needs.bump.outputs.changed == 'true'
+    uses: ./.github/workflows/tests.yaml
+    with:
+      formula-artifact: vgv_ai-formula
+
+  push:
+    needs: [bump, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📚 Git Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: ⬇️ Download Formula
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vgv_ai-formula
+          path: Formula
+
+      - name: 🤖 Commit and Push
+        env:
+          TAG: ${{ needs.bump.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$FORMULA"
+          git commit -m "feat: vgv_ai ${TAG#v}"
+          git push
