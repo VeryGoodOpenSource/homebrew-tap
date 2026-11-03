@@ -1,0 +1,59 @@
+name: tests
+
+# Audits, installs and tests every formula on the platforms its binaries are
+# built for. Runs on pushes to main too, since vgv_ai_cli's release_binaries
+# workflow pushes formula updates there directly rather than opening a PR.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -xeuo pipefail {0}
+
+jobs:
+  test:
+    name: test (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - macos-15
+          - macos-15-intel
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: 🍺 Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@4790763c0a3ba4036f72634dc079c4a7dfcd4878 # 2026.10.19.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔎 Audit, Install and Test
+        run: |
+          shopt -s nullglob
+          formulae=(Formula/*.rb)
+          if [ ${#formulae[@]} -eq 0 ]; then
+            echo "No formulae yet."
+            exit 0
+          fi
+          brew trust verygoodopensource/tap
+          brew style "${formulae[@]}"
+          for file in "${formulae[@]}"; do
+            formula="verygoodopensource/tap/$(basename "$file" .rb)"
+            brew audit --strict --online "$formula"
+            brew install "$formula"
+            brew test "$formula"
+          done
