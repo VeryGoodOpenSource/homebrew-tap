@@ -1,0 +1,60 @@
+name: install
+
+# Installs vgv_ai the way the README tells users to, from an untrusted tap, on
+# every platform vgv_ai ships a binary for. Not path-filtered: it is a
+# required check, so it has to report on every PR.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    # weekly on mondays at 8 am utc
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: install (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - macos-15
+          - macos-15-intel
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: 🍺 Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@2026.11.02.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # setup-homebrew trusts the tap it checks out, which a user's machine
+      # does not.
+      - name: 🚫 Untrust Tap
+        run: brew untrust verygoodopensource/tap
+
+      - name: 📦 Install
+        run: |
+          brew install verygoodopensource/tap/vgv_ai
+          vgv_ai --version
+          brew test vgv_ai
+
+      # The alias resolves once the canonical formula is trusted, which
+      # installing it by its full name did.
+      - name: 🔗 Alias
+        run: brew info vgv-ai
+
+      - name: 🗑️ Uninstall
+        run: brew uninstall vgv_ai
