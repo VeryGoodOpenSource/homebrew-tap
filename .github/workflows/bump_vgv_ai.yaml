@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       # Until the formula is added by hand, there is nothing to bump.
       - name: 🍺 Bump vgv_ai

@@ -10,64 +10,39 @@ set -euo pipefail
 
 repository="VeryGoodOpenSource/vgv_ai_cli"
 formula="Formula/vgv_ai.rb"
+rewrite="$(dirname "$0")/bump_vgv_ai.awk"
 
 fail() {
   echo "error: $*" >&2
   exit 1
 }
 
-[ -f "$formula" ] || fail "$formula does not exist"
+[[ -f "${formula}" ]] || fail "${formula} does not exist"
 
 # vgv_ai_plugins releases alongside the CLI under its own tags, so only vX.Y.Z
 # tags are the CLI's.
-tag="$(gh release list --repo "$repository" \
+tag="$(gh release list --repo "${repository}" \
   --exclude-drafts --exclude-pre-releases --limit 20 --json tagName \
   --jq '[.[].tagName | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))][0] // empty')"
-[ -n "$tag" ] || fail "no vgv_ai_cli release found"
+[[ -n "${tag}" ]] || fail "no vgv_ai_cli release found"
 
 checksums_dir="$(mktemp -d)"
 updated="$(mktemp)"
-trap 'rm -rf "$checksums_dir" "$updated"' EXIT
+trap 'rm -rf "${checksums_dir}" "${updated}"' EXIT
 
-gh release download "$tag" --repo "$repository" \
-  --pattern 'vgv_ai-*.tar.gz.sha256' --dir "$checksums_dir" >&2
+gh release download "${tag}" --repo "${repository}" \
+  --pattern 'vgv_ai-*.tar.gz.sha256' --dir "${checksums_dir}" >&2
 
 checksums=()
-for target in macos-arm64 macos-x64 linux-arm64 linux-x64; do
+for target in macos-arm64 macos-x64 linux-arm64 linux-x64
+do
   file="${checksums_dir}/vgv_ai-${target}.tar.gz.sha256"
-  [ -f "$file" ] || fail "$tag has no vgv_ai-${target}.tar.gz.sha256"
-  checksums+=("${target}=$(cut -d ' ' -f 1 <"$file")")
+  [[ -f "${file}" ]] || fail "${tag} has no vgv_ai-${target}.tar.gz.sha256"
+  checksums+=("${target}=$(cut -d ' ' -f 1 <"${file}")")
 done
 
-# Each url names its archive, so the sha256 that follows it is that archive's.
-awk -v tag="$tag" -v checksums="${checksums[*]}" '
-  BEGIN {
-    count = split(checksums, pairs, " ")
-    for (i = 1; i <= count; i++) {
-      split(pairs[i], pair, "=")
-      sha256[pair[1]] = pair[2]
-    }
-  }
-  /^ *url "/ && match($0, /vgv_ai-[a-z]+-[a-z0-9]+\.tar\.gz/) {
-    target = substr($0, RSTART + 7, RLENGTH - 14)
-    sub(/\/download\/v[^\/]+\//, "/download/" tag "/")
-    bumped[target]++
-  }
-  /^ *sha256 "/ && target != "" {
-    sub(/"[0-9a-f]+"/, "\"" sha256[target] "\"")
-    target = ""
-  }
-  { print }
-  END {
-    for (target in sha256) {
-      if (bumped[target] != 1) {
-        printf "error: expected one url for vgv_ai-%s.tar.gz, found %d\n",
-          target, bumped[target] > "/dev/stderr"
-        exit 1
-      }
-    }
-  }
-' "$formula" >"$updated" || exit 1
+awk -v tag="${tag}" -v checksums="${checksums[*]}" -f "${rewrite}" \
+  "${formula}" >"${updated}" || exit 1
 
-mv "$updated" "$formula"
-echo "$tag"
+mv "${updated}" "${formula}"
+echo "${tag}"
