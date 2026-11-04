@@ -1,7 +1,7 @@
-name: tests
+name: brew test-bot
 
-# Audits, installs and tests every formula on the platforms its binaries are
-# built for.
+# Checks the tap's syntax, and on PRs audits, installs and tests each changed
+# formula on every platform vgv_ai ships a binary for.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -11,19 +11,20 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "**.rb"
+      - ".github/workflows/tests.yaml"
   pull_request:
-  workflow_dispatch:
+    paths:
+      - "**.rb"
+      - ".github/workflows/tests.yaml"
 
 permissions:
   contents: read
 
-defaults:
-  run:
-    shell: bash -xeuo pipefail {0}
-
 jobs:
-  test:
-    name: test (${{ matrix.runner }})
+  test-bot:
+    name: test-bot (${{ matrix.runner }})
     strategy:
       fail-fast: false
       matrix:
@@ -36,22 +37,23 @@ jobs:
 
     steps:
       - name: 🍺 Set up Homebrew
+        id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@4790763c0a3ba4036f72634dc079c4a7dfcd4878 # 2026.10.19.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🔎 Audit, Install and Test
-        run: |
-          shopt -s nullglob
-          formulae=(Formula/*.rb)
-          if [ ${#formulae[@]} -eq 0 ]; then
-            echo "No formulae yet."
-            exit 0
-          fi
-          brew style "${formulae[@]}"
-          for file in "${formulae[@]}"; do
-            formula="verygoodopensource/tap/$(basename "$file" .rb)"
-            brew audit --strict --online "$formula"
-            brew install "$formula"
-            brew test "$formula"
-          done
+      - name: 📦 Cache Homebrew Bundler RubyGems
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: ${{ matrix.runner }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: ${{ matrix.runner }}-rubygems-
+
+      - run: brew test-bot --only-cleanup-before
+
+      - run: brew test-bot --only-setup
+
+      - run: brew test-bot --only-tap-syntax
+
+      - run: brew test-bot --only-formulae
+        if: github.event_name == 'pull_request'

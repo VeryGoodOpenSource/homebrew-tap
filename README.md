@@ -1,55 +1,55 @@
-# Very Good Open Source Homebrew Tap
+# Very Good Open Source for Homebrew
 
-Homebrew formulae for [Very Good Open Source](https://github.com/VeryGoodOpenSource)
-tools.
+This is the official [Very Good Open Source][vgv_oss_link] tap for
+[Homebrew][homebrew_link].
 
-## Install
+macOS and Linux users can use these formulae to install and update
+[`vgv_ai`][vgv_ai_link], on arm64 and x64.
+
+## Initial setup
+
+If you don't have Homebrew, install it from its [homepage][homebrew_link].
+
+The commands below name the formula in full, which taps this repository and
+[trusts][tap_trust_link] only that formula, so there is nothing else to set up.
+
+## Installing
+
+To install `vgv_ai`:
 
 ```sh
-brew install verygoodopensource/tap/<formula>
+brew install verygoodopensource/tap/vgv_ai
 ```
 
-Homebrew only loads formulae from taps it [trusts](https://docs.brew.sh/Tap-Trust).
-Installing a formula by its full name, as above, trusts that formula, so a
-plain `brew upgrade` keeps it up to date afterwards. To install by short name,
-trust the formula first:
+## Updating
+
+`vgv_ai` tells you when a new version is out. To update it:
 
 ```sh
-brew tap verygoodopensource/tap
-brew trust --formula verygoodopensource/tap/<formula>
-brew install <formula>
+brew update
+brew upgrade verygoodopensource/tap/vgv_ai
 ```
 
-In a `Brewfile`, use the full name and `trusted: true`. Without it,
-`brew bundle` refuses to install the formula, even by its full name:
+## Uninstalling
 
-```ruby
-tap "verygoodopensource/tap"
-brew "verygoodopensource/tap/<formula>", trusted: true
+To uninstall `vgv_ai`:
+
+```sh
+brew uninstall vgv_ai
+brew untap verygoodopensource/tap
 ```
 
-## Formulae
+## Releasing
 
-| Formula  | Description                                        | Source                                                                            |
-| -------- | -------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `vgv_ai` | Configures Very Good AI coding agents and tooling. | [VeryGoodOpenSource/vgv_ai_cli](https://github.com/VeryGoodOpenSource/vgv_ai_cli) |
+Formulae live in [`Formula`](Formula) and are edited through PRs. A release
+only changes the tag in each `url` and the `sha256` after it, and
+[`bump_vgv_ai`](.github/workflows/bump_vgv_ai.yaml) makes that change: it runs
+[`tool/bump_vgv_ai.sh`](tool/bump_vgv_ai.sh) against the latest `vgv_ai`
+release and opens or updates the `feat/bump-vgv-ai` PR. `vgv_ai_cli`'s release
+workflow dispatches it once the binaries are attached, and it also runs daily
+in case a dispatch was missed. Squash and merge the PR once its tests pass.
 
-## Updating a formula
-
-Formulae live here and are edited by hand through PRs. Only the release tag
-in each `url` and the `sha256` after it change with a release, and a workflow
-opens a PR for it:
-
-- [`bump_vgv_ai`](.github/workflows/bump_vgv_ai.yaml) runs
-  [`tool/bump_vgv_ai.sh`](tool/bump_vgv_ai.sh), which moves
-  `Formula/vgv_ai.rb` to the latest `vgv_ai_cli` release, and opens or
-  updates the `feat/bump-vgv-ai` PR. `vgv_ai_cli`'s release workflow
-  dispatches it once the binaries are attached, and it also runs daily in case
-  a dispatch was missed.
-
-The tests run on the bump PR like any other, so squash and merge it once
-they pass.
-
-## Documentation
-
-`brew help`, `man brew`, or [Homebrew's documentation](https://docs.brew.sh).
+[homebrew_link]: https://brew.sh
+[tap_trust_link]: https://docs.brew.sh/Tap-Trust
+[vgv_ai_link]: https://github.com/VeryGoodOpenSource/vgv_ai_cli
+[vgv_oss_link]: https://github.com/VeryGoodOpenSource

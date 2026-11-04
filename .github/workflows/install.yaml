@@ -1,0 +1,58 @@
+name: install
+
+# Installs vgv_ai the way the README tells users to, from an untrusted tap, on
+# every platform vgv_ai ships a binary for.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Formula/vgv_ai.rb"
+      - ".github/workflows/install.yaml"
+  pull_request:
+    paths:
+      - ".github/workflows/install.yaml"
+  schedule:
+    # weekly on mondays at 8 am utc
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: install (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - macos-15
+          - macos-15-intel
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: 🍺 Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@4790763c0a3ba4036f72634dc079c4a7dfcd4878 # 2026.10.19.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # setup-homebrew trusts the tap it checks out, which a user's machine
+      # does not. Until the formula is added, there is nothing to install.
+      - name: 🚫 Untrust Tap
+        if: hashFiles('Formula/vgv_ai.rb') != ''
+        run: brew untrust verygoodopensource/tap
+
+      - name: 📦 Install
+        if: hashFiles('Formula/vgv_ai.rb') != ''
+        run: |
+          brew install verygoodopensource/tap/vgv_ai
+          vgv_ai --version
+          brew upgrade verygoodopensource/tap/vgv_ai
+
+      - name: 🗑️ Uninstall
+        if: hashFiles('Formula/vgv_ai.rb') != ''
+        run: brew uninstall vgv_ai
