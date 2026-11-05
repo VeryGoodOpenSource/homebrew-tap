@@ -51,5 +51,8 @@ jobs:
 
       - run: brew test-bot --only-tap-syntax
 
-      - run: brew test-bot --only-formulae
+      # Build from source, which is how users install: the tap publishes no
+      # bottles, and building one patches every ELF file in the keg on Linux,
+      # which turns a `dart compile exe` binary back into the bare Dart runtime.
+      - run: brew test-bot --only-formulae --build-from-source
         if: github.event_name == 'pull_request'
