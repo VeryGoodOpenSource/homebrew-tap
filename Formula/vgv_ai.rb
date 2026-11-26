@@ -9,23 +9,23 @@ class VgvAi < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.2.0/vgv_ai-0.2.0-macos-arm64.tar.gz"
-      sha256 "fc718a58b6ba1731a50476eaf9317ebdea61d5366ba4f40e8b754513c4fc5eb9"
+      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.4.0/vgv_ai-0.4.0-macos-arm64.tar.gz"
+      sha256 "6827b6dc986ef1b97b3b6def041f1d3380ef14f28aa27736f93e0cb332d3006b"
     end
     on_intel do
-      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.2.0/vgv_ai-0.2.0-macos-x64.tar.gz"
-      sha256 "fbf29e81270925f6f641f408dbbf99c3796af6d7bad19cbb9a0d48a0d7621801"
+      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.4.0/vgv_ai-0.4.0-macos-x64.tar.gz"
+      sha256 "f0fe48ada5b3197545b51418262dc91ef8dfd989620f57f721315062435d7da3"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.2.0/vgv_ai-0.2.0-linux-arm64.tar.gz"
-      sha256 "21e8bfff3595d37b120b1bdc22434fb39e93fad1b9393e8bb3da04d2ad298779"
+      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.4.0/vgv_ai-0.4.0-linux-arm64.tar.gz"
+      sha256 "1bc76c8c25f2c1cfd7752d09090f0e51fdf1a4a04fe6794f9120eb0207a506ad"
     end
     on_intel do
-      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.2.0/vgv_ai-0.2.0-linux-x64.tar.gz"
-      sha256 "46d6d2efc748f2a0875dd3027caa1fa0c75e91a1725fccc76a7535f4f5131298"
+      url "https://github.com/VeryGoodOpenSource/vgv_ai_cli/releases/download/v0.4.0/vgv_ai-0.4.0-linux-x64.tar.gz"
+      sha256 "02a543258b9c469de6ca7afe9ef8c29c402968c837b28a4248aab77b17c4d9b2"
     end
   end
 
